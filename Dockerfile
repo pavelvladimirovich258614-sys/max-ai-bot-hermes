@@ -20,8 +20,9 @@ RUN update-ca-certificates
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code.
+# Copy application code and static menu assets.
 COPY app ./app
+COPY assets ./assets
 COPY tests ./tests
 COPY .env.example ./.env.example
 COPY README.md ./README.md

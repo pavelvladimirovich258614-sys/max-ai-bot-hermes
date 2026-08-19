@@ -6,7 +6,8 @@ services:
     env_file:
       - .env
     ports:
-      - "8080:8080"
+      # Nginx is the only public entrypoint; never expose Uvicorn directly.
+      - "127.0.0.1:8080:8080"
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs

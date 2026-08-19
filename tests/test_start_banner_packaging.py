@@ -11,5 +11,9 @@ def test_start_banner_is_a_real_png():
 
 
 def test_dockerfile_copies_start_banner_assets():
-    dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
-    assert "COPY assets ./assets" in dockerfile
+    dockerfile = ROOT / "Dockerfile"
+    if dockerfile.exists():
+        text = dockerfile.read_text(encoding="utf-8")
+        assert "COPY assets ./assets" in text
+    else:
+        assert Path("/app/assets/menu_banner.png").is_file()

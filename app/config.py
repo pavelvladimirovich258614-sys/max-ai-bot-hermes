@@ -43,6 +43,8 @@ class Settings(BaseSettings):
     llm_model: str = "MiniMax-M3"
     # Mode for the primary provider: "anthropic" (Messages API) or "openai" (chat/completions)
     llm_primary_style: str = "anthropic"
+    # One provider gets a short budget; timeout switches to fallback immediately.
+    llm_request_timeout_s: float = 25.0
 
     # ---- LLM (fallback) ----
     llm_fallback_provider: str = "stepfun"

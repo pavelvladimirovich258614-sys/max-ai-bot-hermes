@@ -66,8 +66,9 @@ ROLE_BANNERS: dict[str, tuple[str, str]] = {
     "analyzer": ("🔬", "ANALYZE"),
 }
 
-# LLM call timeout (seconds). Pavel said LLM works in 7-9s; 60s leaves headroom.
-_LLM_TIMEOUT_S = 60.0
+# Overall orchestration budget. Provider calls use 25s each and switch to the
+# fallback immediately on timeout; this budget also leaves room for web tools.
+_LLM_TIMEOUT_S = 75.0
 # Pause after ProgressReporter closes so the final edit lands before we send
 # the banner as a separate message.
 _POST_PROGRESS_PAUSE_S = 0.3

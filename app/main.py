@@ -19,6 +19,7 @@ from fastapi.responses import JSONResponse
 from app.config import get_settings
 from app.context import init_context, get_context
 from app.max.client import setup_bot
+from app.webhook_runtime import WebhookTaskSupervisor
 
 logging.basicConfig(
     level=get_settings().log_level,
@@ -38,6 +39,7 @@ async def lifespan(app: FastAPI):
     ctx.bot = bot
     app.state.bot = bot
     app.state.dp = dp
+    app.state.webhook_runtime = WebhookTaskSupervisor()
 
     polling_task: asyncio.Task | None = None
     if _settings.max_use_polling:
@@ -57,6 +59,8 @@ async def lifespan(app: FastAPI):
             await polling_task
         except asyncio.CancelledError:
             pass
+    if getattr(app.state, "webhook_runtime", None) is not None:
+        await app.state.webhook_runtime.aclose()
     if getattr(ctx, "hermes", None) is not None:
         await ctx.hermes.aclose()
     await ctx.orchestrator.aclose()
@@ -75,20 +79,26 @@ async def health() -> dict:
 
 @app.post(_settings.webhook_path)
 async def webhook(request: Request) -> Response:
-    """Receive a MAX webhook update and dispatch it."""
-    dp = app.state.dp
-    bot = app.state.bot
+    """Acknowledge a MAX update immediately, then dispatch it once in background."""
     event_json = await request.json()
-    # Optional secret header validation (X-Max-Bot-Api-Secret) — set in .env if used.
-    try:
-        from maxapi.methods.types.getted_updates import process_update_webhook
 
-        event = await process_update_webhook(event_json=event_json, bot=bot)
-    except Exception as e:  # noqa: BLE001
-        logger.warning("Failed to parse webhook update: %s", e)
-        return JSONResponse(content={"ok": False}, status_code=400)
-    await dp.handle(event)
-    return JSONResponse(content={"ok": True}, status_code=200)
+    async def process() -> None:
+        try:
+            from maxapi.methods.types.getted_updates import process_update_webhook
+
+            event = await process_update_webhook(
+                event_json=event_json,
+                bot=app.state.bot,
+            )
+            await app.state.dp.handle(event)
+        except Exception:  # noqa: BLE001
+            logger.exception("Failed to process webhook update")
+
+    accepted = app.state.webhook_runtime.submit(event_json, process)
+    return JSONResponse(
+        content={"ok": True, "duplicate": not accepted},
+        status_code=200,
+    )
 
 
 def main() -> None:  # pragma: no cover - entrypoint for non-docker runs

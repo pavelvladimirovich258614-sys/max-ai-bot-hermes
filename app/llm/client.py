@@ -8,8 +8,9 @@ Primary provider = MiniMax (anthropic-style per the project spec).
 Fallback provider = StepFun (openai-style). If the primary call raises or
 returns an error, the client transparently retries on the fallback.
 
-All network calls go through a shared httpx.AsyncClient (timeout 60s) with
-up to 2 retries + exponential backoff. Calls are rate-limited by a semaphore
+All network calls go through a shared httpx.AsyncClient. A provider timeout
+switches to the configured fallback immediately; other transient errors retain
+bounded retries with exponential backoff. Calls are rate-limited by a semaphore
 (30 rps) shared from the middleware layer. We never log prompt contents —
 only metadata (length, model, latency, status).
 """
@@ -34,7 +35,9 @@ class LLMError(RuntimeError):
 class LLMClient:
     def __init__(self, settings: Settings, rate_semaphore: Optional[asyncio.Semaphore] = None) -> None:
         self._settings = settings
-        self._client = httpx.AsyncClient(timeout=httpx.Timeout(60.0))
+        self._client = httpx.AsyncClient(
+            timeout=httpx.Timeout(settings.llm_request_timeout_s)
+        )
         # 30 rps hard cap on the MAX API; reuse the same bound for LLM calls.
         self._sem = rate_semaphore or asyncio.Semaphore(30)
 
@@ -111,6 +114,15 @@ class LLMClient:
                     if cfg["style"] == "anthropic":
                         return await self._call_anthropic(cfg, messages, system, max_tokens)
                     return await self._call_openai(cfg, messages, system, max_tokens)
+            except httpx.TimeoutException as e:
+                logger.warning(
+                    "LLM provider timeout model=%s after %.0fs; switching provider",
+                    cfg["model"],
+                    self._settings.llm_request_timeout_s,
+                )
+                raise LLMError(
+                    f"provider timeout after {self._settings.llm_request_timeout_s:.0f}s"
+                ) from e
             except (httpx.HTTPError, LLMError) as e:
                 last_err = e
                 logger.warning("LLM attempt %d/%d failed: %s", attempts, 3, e)

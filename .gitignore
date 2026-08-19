@@ -1,0 +1,67 @@
+# === Секреты и credentials ===
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.crt
+config/local.yaml
+secrets/
+.credentials/
+
+# Public CA chain required by Docker build — certificates are public, not credentials.
+!certs/russian_trusted_root_ca_pem.crt
+!certs/russian_trusted_sub_ca_2024_pem.crt
+
+# === Python ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+ENV/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+
+# === IDE ===
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# === Runtime data ===
+data/
+logs/
+*.log
+*.pid
+*.sock
+
+# === Bot state ===
+*.db
+*.sqlite
+*.sqlite3
+data/images/
+
+# === Docker ===
+.docker/
+docker-compose.override.yml
+
+# === Generated images (бота) ===
+generated_images/
+.cache/
+
+# === V3 plan / research drafts ===
+docs/drafts/
+docs/.scratch/
+*.tmp

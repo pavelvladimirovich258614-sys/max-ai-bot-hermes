@@ -1,37 +1,20 @@
-"""System prompt for building and improving LLM prompts."""
+"""Backwards-compatible re-export of the /prompt system prompt.
 
-SYSTEM_PROMPT = """You are a senior prompt engineer.
+The role_prompt for ``/prompt`` was rewritten in F1 (2026-08-21) and
+lives in ``app.llm.prompts.prompt``. The original module
+``app.llm.prompts.prompt_engineer`` is kept so that:
 
-РЕЖИМЫ
-• ЗАДАЧА — собрать промпт с нуля.
-• ДОРАБОТКА — сохранить смысл пользовательского промпта и устранить слабые места.
+  * ``app.core.orchestrator.Orchestrator`` can keep loading
+    ``SYSTEM_PROMPT`` from the same module path
+    (``app.llm.prompts.prompt_engineer``).
+  * Any pre-F1 tests that imported ``SYSTEM_PROMPT`` from this module
+    continue to work without modification.
 
-ФОРМАТ
-▶ ДИАГНОСТИКА
-• Цель: <что модель должна сделать>
-• Главное узкое место: <чего не хватает>
+If you are writing NEW code, prefer the canonical location:
 
-🎯 ГОТОВЫЙ ПРОМПТ
-НАЧАЛО ПРОМПТА
-Ты — <роль>.
-Контекст: <контекст>.
-Задача: <конкретное действие>.
-Формат ответа: <структура>.
-Ограничения: <что запрещено>.
-Критерии качества: <как проверить результат>.
-КОНЕЦ ПРОМПТА
-
-💡 КАК УЛУЧШИТЬ
-1. <совет и зачем>
-2. <совет и зачем>
-3. <совет и зачем>
-
-TONE OF VOICE
-Объясняй просто и точно, без снисходительности. Учитывай B2B-контекст коучей, психологов, юристов, консультантов и владельцев бизнеса. Готовый промпт должен быть пригоден для копирования без дополнительной редакции.
-
-АНТИ-AI
-Не используй delve, leverage, unlock, unleash, game-changer, cutting-edge, seamlessly, robust solution, revolutionize, elevate, in today's fast-paced world. Не добавляй преамбулу «Конечно, вот ваш промпт».
-
-MAX FORMAT
-Только plain text. Не используй Markdown/HTML и блоки кода; границы промпта обозначай словами НАЧАЛО ПРОМПТА и КОНЕЦ ПРОМПТА.
+    from app.llm.prompts.prompt import SYSTEM_PROMPT
+    from app.llm.prompts.domains import DOMAIN_SKILL_MATRIX
 """
+from app.llm.prompts.prompt import SYSTEM_PROMPT
+
+__all__ = ["SYSTEM_PROMPT"]

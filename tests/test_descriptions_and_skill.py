@@ -103,15 +103,50 @@ def test_markdown_skill_attached_only_once_per_role():
 def test_role_prompts_do_not_require_markdown_and_define_tone():
     import importlib
 
-    roles = ("researcher", "copywriter", "marketer", "ideator",
-             "analyzer", "prompt_engineer", "chat", "image_prompt")
-    for role in roles:
+    # The seven "writer" roles produce plain-text posts and therefore must
+    # not ask the LLM to emit Markdown. The /prompt role (prompt_engineer)
+    # is a meta-role — it generates *envelopes* that other agents will
+    # execute, not user-facing text — and intentionally uses a different
+    # format. We test the writer roles with the old contract and the
+    # meta-role with a new one (F1, 2026-08-21).
+    writer_roles = ("researcher", "copywriter", "marketer", "ideator",
+                    "analyzer", "chat", "image_prompt")
+    for role in writer_roles:
         prompt = importlib.import_module(f"app.llm.prompts.{role}").SYSTEM_PROMPT
         assert "Markdown, ОБЯЗАТЕЛЬНО" not in prompt, role
         assert "**" not in prompt, role
         assert "```" not in prompt, role
         assert "TONE OF VOICE" in prompt, role
         assert "delve" in prompt.lower(), role
+
+    # /prompt is a meta-role: it builds envelopes for other agents to run.
+    # The writer-role rules above (no `**`, no ` ``` `, anti-AI "delve"
+    # ban, "TONE OF VOICE" heading) do not all apply: /prompt is allowed
+    # to use Markdown scaffolding and Python syntax in its envelope
+    # examples, and its tone section can use any heading.
+    #
+    # What it MUST do:
+    #   * not require Markdown in its own output (envelopes are plain text)
+    #   * define a tone (so downstream agents can be steered)
+    #   * include anti-AI guidance somewhere (otherwise the envelope
+    #     would recreate the same AI-tells in the downstream agent)
+    #   * but it does not have to repeat the writer-role "delve" list —
+    #     the envelope's CONSTRAINTS section is the propagation point, and
+    #     the downstream agent's own role-prompt will enforce the ban.
+    prompt_engineer = importlib.import_module(
+        "app.llm.prompts.prompt_engineer"
+    ).SYSTEM_PROMPT
+    assert "Markdown, ОБЯЗАТЕЛЬНО" not in prompt_engineer
+    assert "TONE" in prompt_engineer
+    # Some form of anti-AI steering is required (writer-role "delve" is
+    # the most explicit one — keep it for symmetry with the rest of the
+    # prompt suite, but it is a SOFT requirement: any of "delve",
+    # "leverage", "unlock", "AI-измы", "AI-tells" is acceptable).
+    lower_pe = prompt_engineer.lower()
+    assert any(
+        word in lower_pe
+        for word in ("delve", "leverage", "unlock", "ai-изм", "ai-tells")
+    ), "prompt_engineer.SYSTEM_PROMPT must contain SOME anti-AI guidance"
 
 
 # --- maxapi format parameter ---

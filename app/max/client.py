@@ -31,13 +31,14 @@ from app.max.handlers import (
     prompt_cmd,
     research,
     start,
+    status,
 )
 from app.max.publisher import Publisher
 from app.middleware.auth import AuthGate
 
 logger = logging.getLogger("maxbot.max.client")
 
-# 11 команд: видны при вводе "/" в MAX.
+# 12 команд: видны при вводе "/" в MAX.
 BOT_COMMANDS = [
     BotCommand(name="start", description="🚀 Запустить бота"),
     BotCommand(name="help", description="❓ Справка по командам"),
@@ -49,6 +50,7 @@ BOT_COMMANDS = [
     BotCommand(name="ideate", description="💡 10 идей для постов"),
     BotCommand(name="prompt", description="🎯 Помощь с промптом"),
     BotCommand(name="image", description="🎨 Сгенерировать картинку"),
+    BotCommand(name="status", description="📊 Статус бота (Hermes / LLM)"),
     BotCommand(name="restart", description="🔄 Перезапустить бота"),
 ]
 
@@ -74,6 +76,7 @@ def register_handlers(dp: Dispatcher, deps: "object") -> None:
     free_chat.register(dp, deps)
     callback_handler.register(dp, deps)
     image_gen.register(dp, deps)
+    status.register(dp, deps)
     # Hermes button (Feature V3) — registered LAST so it gets a shot at
     # every callback/text the others ignored.
     hermes_button.register(dp, deps)

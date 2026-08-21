@@ -50,7 +50,8 @@ def register(dp: Dispatcher, deps: Deps) -> None:
             "/post <channel_id> <текст> — черновик поста с approve-кнопкой\n"
             "/analyze <URL> — резюме страницы по ссылке\n"
             "/ideate <тема> — 10 идей для постов\n"
-            "/prompt <задача> — структура промпта и антипаттерны\n\n"
+            "/prompt <задача> — структура промпта и антипаттерны\n"
+            "/status — диагностика (Hermes / LLM / последние ошибки)\n\n"
             "Или просто напиши любой текст — бот ответит в диалоге.",
             attachments=main_menu_keyboard(),
         )

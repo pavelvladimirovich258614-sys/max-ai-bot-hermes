@@ -308,7 +308,92 @@ async def run_role(
 # ---- per-role entry points (called after the user supplies text) ----
 
 async def do_research(deps: Deps, event, text: str) -> None:
-    await run_role(deps, event, "researcher", text, "🔎 Исследую…")
+    """F2: parse ``<topic> [freshness]`` and run the three-tier cascade.
+
+    Backwards-compat: if the user did not append a freshness window
+    (e.g. legacy ``/research AI in legal``), we default to 30d and run
+    the cascade exactly like the F2.5 handler does. If the cascade
+    returns a FAILED result, we still send the JSON to the user so
+    they see the diagnostic — the /status command can confirm the
+    full chain.
+    """
+    from app.core.research_cascade import ResearchCascade
+    from app.schemas.research import parse_freshness
+    from app.max.formatting import MarkdownSender
+    from app.max.keyboards import home_button
+
+    # Parse ``<topic> [freshness]`` — last token is the window if it
+    # matches a known suffix. Otherwise, topic = whole text, window =
+    # default "30d".
+    parts = (text or "").split()
+    freshness_token = parts[-1] if parts and parts[-1].lower() in (
+        "7d", "30d", "90d", "all",
+    ) else None
+    if freshness_token:
+        topic = " ".join(parts[:-1]).strip()
+        freshness_window = parse_freshness(freshness_token)
+    else:
+        topic = (text or "").strip()
+        freshness_window = "30d"
+
+    if not topic:
+        await _safe_send(
+            event,
+            "Использование: /research <тема> [7d|30d|90d|all]",
+            attachments=home_button(),
+        )
+        return
+
+    chat_id, user_id = event.get_ids()
+    intro = f"🔎 Исследую «{topic}» (окно: {freshness_window})…"
+    sender = MarkdownSender(event.bot)
+    progress_mid: str | None = None
+    try:
+        progress_msg = await sender.send(chat_id, intro)
+        progress_mid = (
+            getattr(getattr(progress_msg, "message", None), "body", None) and
+            getattr(progress_msg.message.body, "mid", None)
+        )
+    except Exception:  # noqa: BLE001
+        progress_mid = None
+
+    settings = app_config.get_settings()
+    cascade = ResearchCascade(settings)
+    try:
+        result = await cascade.run(topic, freshness_window)
+    finally:
+        await cascade.aclose()
+
+    # Render: status banner + compact JSON.
+    status_emoji = {
+        "OK": "✅",
+        "PARTIAL": "🟡",
+        "NO_FRESH_DATA": "⚠️",
+        "FAILED": "❌",
+    }.get(result.status, "🔍")
+    body = (
+        f"{status_emoji} RESEARCH — {result.status}\n"
+        f"Окно: {result.freshness_window}  "
+        f"Tier 1: {result.tier_summary.tier1_urls}  "
+        f"Tier 2: {result.tier_summary.tier2_crawled}  "
+        f"Tier 3: {result.tier_summary.tier3_verified}  "
+        f"Hermes: {result.tier_summary.hermes_enrichment}\n\n"
+        f"📝 {result.answer}\n\n"
+        f"```json\n{result.to_compact_json()}\n```"
+    )
+    body = clean_for_max(body)
+
+    # Edit the progress message in place if we have a mid; otherwise
+    # send a new one.
+    if progress_mid is not None:
+        try:
+            await event.bot.edit_message(
+                progress_mid, text=body, attachments=home_button(), notify=False,
+            )
+        except Exception:  # noqa: BLE001
+            await _safe_send(event, body, attachments=home_button())
+    else:
+        await _safe_send(event, body, attachments=home_button())
 
 
 def _classify_copy_input(text: str) -> tuple[str, str]:

@@ -65,3 +65,8 @@ generated_images/
 docs/drafts/
 docs/.scratch/
 *.tmp
+
+# F0+F1+F2 review artifacts (not part of source)
+patches/
+smoke_output.json
+.review-venv/

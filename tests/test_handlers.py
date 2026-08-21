@@ -28,7 +28,18 @@ def test_settings_defaults_no_secrets():
 
 
 def test_researcher_prompt_present():
-    assert "5–7" in researcher.SYSTEM_PROMPT or "5-7" in researcher.SYSTEM_PROMPT
+    # F2 (2026-08-21): the researcher role is now a strict-JSON
+    # Research Engineer-of-Record. The "5-7 findings" prose requirement
+    # was replaced by a strict schema. We assert the new contract.
+    sp = researcher.SYSTEM_PROMPT
+    # The role no longer tells the LLM to "give 5-7 findings" — it
+    # tells the LLM to emit a single JSON object matching ResearchResult.
+    assert "ResearchResult" in sp
+    # And the freshness rule is explicit.
+    assert "FRESHNESS" in sp or "freshness" in sp
+    # The old "5-7" finding count is no longer the contract; if it
+    # ever sneaks back in we want to know, not have it silently pass.
+    assert "5–7" not in sp and "5-7" not in sp
 
 
 def test_start_text_is_plain_without_markdown_markers():

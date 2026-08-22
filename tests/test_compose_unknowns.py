@@ -1,0 +1,66 @@
+"""Tests for BUG #2 fix in ResearchCascade._compose_unknowns.
+
+The bug: ``_compose_unknowns`` used to always append the generic
+"Все ключевые находки имеют прямые URL…" message whenever no
+specific unknown was found. That made ``unknowns`` carry filler
+content on NO_FRESH_DATA / empty-findings paths.
+
+Fix: the generic message must be added only when there are findings
+AND every finding has a non-empty url. Empty findings → no message.
+Findings missing url → no message (they're the actual unknowns).
+"""
+from __future__ import annotations
+
+from datetime import date
+from types import SimpleNamespace
+
+from app.core.research_cascade import ResearchCascade
+from app.schemas.research import KeyFinding
+
+
+GENERIC_MSG = "Все ключевые находки имеют прямые URL и оценку уверенности."
+
+
+def _new_cascade() -> ResearchCascade:
+    """Construct a cascade without going through __init__ (we only need _compose_unknowns)."""
+    return ResearchCascade.__new__(ResearchCascade)
+
+
+def _finding(url: str = "https://example.com/x") -> KeyFinding:
+    return KeyFinding(
+        claim="test claim",
+        evidence="text",
+        url=url,
+        source_type="blog",
+        published_at=date(2026, 8, 20),
+        tier=2,
+        confidence="high",
+    )
+
+
+def test_compose_unknowns_empty_findings_no_generic():
+    """Empty findings list → unknowns must be empty (no filler)."""
+    cascade = _new_cascade()
+    out = cascade._compose_unknowns(findings=[], after_date=None, status="FAILED")
+    assert GENERIC_MSG not in out, f"Generic message leaked into empty findings: {out}"
+    assert out == [], f"Expected empty unknowns, got {out}"
+
+
+def test_compose_unknowns_findings_without_url_no_generic():
+    """A finding with an empty url → generic message must NOT be added."""
+    cascade = _new_cascade()
+    # Use a SimpleNamespace to bypass KeyFinding's min_length=1 validation;
+    # _compose_unknowns only reads ``f.url`` and ``f.confidence``.
+    bad = SimpleNamespace(
+        claim="c", evidence="", url="", source_type="blog",
+        published_at=date(2026, 8, 20), tier=2, confidence="high",
+    )
+    out = cascade._compose_unknowns(findings=[bad], after_date=None, status="OK")
+    assert GENERIC_MSG not in out, f"Generic message should not appear when url is empty: {out}"
+
+
+def test_compose_unknowns_findings_with_url_includes_generic():
+    """Valid findings with urls → generic message SHOULD be present."""
+    cascade = _new_cascade()
+    out = cascade._compose_unknowns(findings=[_finding()], after_date=None, status="OK")
+    assert GENERIC_MSG in out, f"Generic message missing for valid findings: {out}"

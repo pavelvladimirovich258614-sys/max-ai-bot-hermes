@@ -569,7 +569,7 @@ class ResearchCascade:
                 f"Нет публикаций новее {after_date.isoformat()}. "
                 f"Попробуйте расширить окно (90d / all) или уточнить тему."
             )
-        if not out:
+        if findings and all(f.url for f in findings):
             out.append("Все ключевые находки имеют прямые URL и оценку уверенности.")
         return out
 

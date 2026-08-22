@@ -31,6 +31,8 @@ import os
 import sys
 from pathlib import Path
 
+from app.schemas.research import parse_freshness
+
 # Allow running as ``python -m app.cli.research_smoke`` from the project root.
 _HERE = Path(__file__).resolve().parent
 _ROOT = _HERE.parent.parent

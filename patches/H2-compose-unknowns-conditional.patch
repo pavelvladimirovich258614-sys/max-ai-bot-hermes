@@ -1,0 +1,13 @@
+diff --git a/app/core/research_cascade.py b/app/core/research_cascade.py
+index 7a0c9bf..36452c8 100644
+--- a/app/core/research_cascade.py
++++ b/app/core/research_cascade.py
+@@ -569,7 +569,7 @@ class ResearchCascade:
+                 f"╨Э╨╡╤В ╨┐╤Г╨▒╨╗╨╕╨║╨░╤Ж╨╕╨╣ ╨╜╨╛╨▓╨╡╨╡ {after_date.isoformat()}. "
+                 f"╨Я╨╛╨┐╤А╨╛╨▒╤Г╨╣╤В╨╡ ╤А╨░╤Б╤И╨╕╤А╨╕╤В╤М ╨╛╨║╨╜╨╛ (90d / all) ╨╕╨╗╨╕ ╤Г╤В╨╛╤З╨╜╨╕╤В╤М ╤В╨╡╨╝╤Г."
+             )
+-        if not out:
++        if findings and all(f.url for f in findings):
+             out.append("╨Т╤Б╨╡ ╨║╨╗╤О╤З╨╡╨▓╤Л╨╡ ╨╜╨░╤Е╨╛╨┤╨║╨╕ ╨╕╨╝╨╡╤О╤В ╨┐╤А╤П╨╝╤Л╨╡ URL ╨╕ ╨╛╤Ж╨╡╨╜╨║╤Г ╤Г╨▓╨╡╤А╨╡╨╜╨╜╨╛╤Б╤В╨╕.")
+         return out
+ 

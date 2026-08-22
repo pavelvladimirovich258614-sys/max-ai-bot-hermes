@@ -1,0 +1,44 @@
+diff --git a/app/cli/research_smoke.py b/app/cli/research_smoke.py
+index abd4a8f..77c88a7 100644
+--- a/app/cli/research_smoke.py
++++ b/app/cli/research_smoke.py
+@@ -31,6 +31,8 @@ import os
+ import sys
+ from pathlib import Path
+ 
++from app.schemas.research import parse_freshness
++
+ # Allow running as ``python -m app.cli.research_smoke`` from the project root.
+ _HERE = Path(__file__).resolve().parent
+ _ROOT = _HERE.parent.parent
+diff --git a/tests/test_research_smoke_imports.py b/tests/test_research_smoke_imports.py
+new file mode 100644
+index 0000000..d2c10d2
+--- /dev/null
++++ b/tests/test_research_smoke_imports.py
+@@ -0,0 +1,25 @@
++"""Test for BUG #1 fix in app.cli.research_smoke.
++
++The bug: ``main()`` called ``parse_freshness(args.fresh)`` but the
++import was only present inside ``_run()`` (line 59), so calling
++``main()`` directly raised ``NameError: name 'parse_freshness' is not
++defined``.
++
++Fix: import ``parse_freshness`` at module top level so ``main()`` can
++use it without going through ``_run()`` first.
++"""
++from __future__ import annotations
++
++import app.cli.research_smoke as smoke
++
++
++def test_research_smoke_imports_parse_freshness_at_module_level():
++    """``parse_freshness`` must be accessible as a module-level attribute."""
++    assert hasattr(smoke, "parse_freshness"), (
++        "parse_freshness must be importable from app.cli.research_smoke at module level"
++    )
++    # Sanity: it must be callable, not just present.
++    assert callable(smoke.parse_freshness)
++    assert smoke.parse_freshness("30d") == "30d"
++    assert smoke.parse_freshness("7d") == "7d"
++    assert smoke.parse_freshness("all") == "all"

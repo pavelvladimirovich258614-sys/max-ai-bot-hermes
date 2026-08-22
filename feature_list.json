@@ -195,15 +195,27 @@
       "batch": "BATCH-3",
       "title": "Pipeline orchestrator + Evaluator (golden set) + SQLite cache",
       "priority": "P0",
-      "status": "not_started",
+      "status": "passing",
       "scope": [
         "app/core/pipeline_orchestrator.py (new)",
+        "app/core/pipeline_state.py (new)",
+        "tests/test_pipeline_orchestrator.py (new)",
+        "app/llm/evaluator.py (new)",
+        "app/llm/evaluator_schemas.py (new)",
         "tests/test_research_evaluator.py (new)",
-        "app/db/research_cache.py (new)"
+        "tests/fixtures/eval_golden_set.json (new)",
+        "app/db/research_cache.py (new)",
+        "tests/test_research_cache.py (new)",
+        "app/db/storage.py (extended with CREATE TABLE research_cache)",
+        "pytest.ini (new — evaluator marker)"
       ],
-      "tests": [],
-      "evidence": "todo: hermes peer dm rza, golden set 5 topics, TTL 1h",
-      "blocked_by": []
+      "tests": [
+        "tests/test_pipeline_orchestrator.py",
+        "tests/test_research_evaluator.py",
+        "tests/test_research_cache.py"
+      ],
+      "evidence": "250 passed (231 baseline + 19 new: 8 pipeline + 4 evaluator + 7 cache). FSM with 7 states and explicit transitions. Hermes subprocess via create_subprocess_exec (no shell). SQLite cache with sha256 keys and TTL 1h. Evaluator uses LLMClient.chat() with mock-friendly JSON parser and deterministic fallback. Golden set 5 topics with @pytest.mark.evaluator.",
+      "completed": "2026-08-22"
     },
     {
       "id": "D.1",

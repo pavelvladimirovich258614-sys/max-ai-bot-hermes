@@ -5,36 +5,34 @@
 
 ---
 
-## Last verified: 2026-08-22 21:08 UTC (сессия 006)
+## Last verified: 2026-08-22 22:48 UTC (сессия 007 — batch 3 merged, deploy pending)
 
 ### Проверено сейчас ✅
-- **HEAD на main:** `d74c3506e67e504758ac8c76fb1ee68ed377da1c`
-- **Предыдущий:** `5f4eba1` (hotfix commit) → `4108519` (F0+F1+F2 merge)
-- **`/healthz` на проде:** `200 OK`, body `{"status":"ok"}`
-- **docker compose ps:** `max-ai-bot Up ~1 min (healthy)`, image `max-ai-bot-hermes-max-ai-bot:latest`
-- **Бот uptime:** ~20 минут (rebuild в 13:06 UTC)
-- **Live smoke:** PARTIAL, 8 findings, все `published_at=2026-08-15` (≤7d окно)
-- **Тесты локально:** 231 passed in 22.20s
-- **maxapi pin:** `maxapi==1.2.2` в `requirements.txt`
-- **Harness files:** 5 новых (AGENTS.md, feature_list.json, init.sh, progress.md, session-handoff.md) — коммитятся в этом хандоффе
+- **HEAD на main:** `4cc68e8` (harness, до batch 3 merge)
+- **Batch 3 worktree'ы:** `b3-A` @ `ac1aaca`, `b3-B` @ `a1ab1a5`, `b3-C` @ `8e5c0df` — все clean
+- **Patch apply:** A → C → B, без конфликтов, 9 новых + 1 modified (storage.py)
+- **Тесты локально:** **250 passed** (231 baseline + 19 новых: 8 pipeline + 4 evaluator + 7 cache)
+- **pytest collect-only:** 250 tests, 0 errors
+- **Прод HEAD до deploy:** `d74c350` (предыдущий hotfix merge)
+- **`/healthz` на проде:** ещё 200 OK от deploy hotfix C
+- **Live smoke ранее:** PARTIAL, 8 findings, все `published_at=2026-08-15` (≤7d окно)
 
-### Изменено в последней сессии (006 — harness)
-- Создано 5 harness-файлов (см. `progress.md` сессия 006)
-- Никаких изменений в `app/`, `tests/`, `requirements.txt`, deploy-инфраструктуре
+### Изменено в последней сессии (007 — batch 3)
+- Sub-task A: `app/core/pipeline_state.py`, `app/core/pipeline_orchestrator.py`, `tests/test_pipeline_orchestrator.py`
+- Sub-task B: `app/llm/evaluator.py`, `app/llm/evaluator_schemas.py`, `tests/test_research_evaluator.py`, `tests/fixtures/eval_golden_set.json`, `pytest.ini`
+- Sub-task C: `app/db/research_cache.py`, `tests/test_research_cache.py`, `app/db/storage.py` (extended)
+- Harness: `feature_list.json` (F3 passing), `progress.md` (сессия 007), `session-handoff.md` (этот файл)
 
-### Изменено в предыдущей сессии (005 — hotfix C)
-- `app/cli/research_smoke.py` — добавлен module-level import `parse_freshness`
-- `app/core/research_cascade.py` — `_compose_unknowns` теперь условный
-- `requirements.txt` — `maxapi>=0.13.0` → `maxapi==1.2.2`
-- `tests/test_compose_unknowns.py` — новый, 3 теста
-- `tests/test_research_smoke_imports.py` — новый, 1 тест
-- `patches/H1-...patch`, `H2-...patch`, `H3-...patch` — архивные патчи
+### Изменено в предыдущей сессии (006 — harness)
+- 5 harness-файлов: AGENTS.md, feature_list.json, init.sh, progress.md, session-handoff.md
+- Коммит `4cc68e8`
 
 ### Сломано / известные ограничения 🚨
 - ⚠️ `RuntimeWarning: duckduckgo_search renamed to ddgs` — варнинг, не блокер. Известно. Фикс: `requirements.txt` `ddgs` вместо `duckduckgo_search`. Отдельный мини-hotfix если попросят.
-- ⚠️ F2.4 (Hermes enrichment) — `skipped` на проде, потому что peer RZA не зарегистрирован в `session.py`. Это by design, graceful degradation.
-- ⚠️ `.review-venv/` (60 МБ) в `D:\hermes-multi-agent-setup\max-ai-bot-hermes-review\` — leftover от review-сессии, не в git. Permission-gate блокирует `Remove-Item`. Удалить вручную если мешает.
+- ⚠️ F2.4 (Hermes enrichment) — `skipped` на проде, peer RZA не зарегистрирован в `session.py`. By design, graceful degradation.
+- ⚠️ `.review-venv/` (60 МБ) в `max-ai-bot-hermes-review/` — leftover. Permission-gate блокирует `Remove-Item`. Удалить вручную если мешает.
 - ⚠️ Coverage не измерен (D.2 not_started)
+- ⚠️ Pipeline / Evaluator / Cache **НЕ интегрированы в существующие handlers** — out of scope батча 3. Лежат готовые к использованию, но handlers по-прежнему зовут cascade напрямую. Следующий шаг: Sub-task D (workflow integration) — подключить pipeline к `/research` handler, evaluator в опциональный pre-publish step, cache как decorator на cascade.run.
 
 ### Следующий шаг → Sub-task A (Batch 3)
 **Pipeline orchestrator** — `app/core/pipeline_orchestrator.py` (новый файл)

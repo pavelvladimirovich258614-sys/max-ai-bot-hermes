@@ -46,13 +46,27 @@
 - **Side-effect:** `maxapi>=0.13.0` → `maxapi==1.2.2` (pin в requirements.txt, был не установлен локально)
 - **Статус:** ✅ done
 
-## 006 — 2026-08-22: Harness files (in progress)
+## 006 — 2026-08-22: Harness files
 
 - **Что:** AGENTS.md, feature_list.json, init.sh, progress.md (этот файл), session-handoff.md
 - **Цель:** Single source of truth для следующих сессий
-- **Текущее состояние:** main HEAD = `d74c350`, /healthz=200, бот на проде ~20h healthy
-- **Следующий:** Батч 3 — Pipeline orchestrator + Evaluator (golden set) + SQLite cache
-- **Статус:** 🔄 in progress
+- **Коммит:** `4cc68e8`
+- **Статус:** ✅ done
+
+## 007 — 2026-08-22: Batch 3 (Pipeline + Evaluator + Cache)
+
+- **Что:** 3 параллельных sub-task'а в 3 worktree
+  - **A — Pipeline orchestrator** (`feature/batch3-pipeline`): FSM (7 states), `PipelineOrchestrator.run/cancel/status`, hermes subprocess через `create_subprocess_exec` (без shell), 60s timeout, graceful degradation
+  - **B — Evaluator** (`feature/batch3-evaluator`): `EvalInput`/`EvalOutput` Pydantic, `ResearchEvaluator(llm)` обёртка, 5 default criteria, golden set 5 тем, `@pytest.mark.evaluator`
+  - **C — Research cache** (`feature/batch3-cache`): `ResearchCache(aiosqlite)` с TTL 1h, sha256 keys, hit_count, cleanup_expired, `@cache` decorator, миграция в `storage.py`
+- **Worktree'ы:** `max-ai-bot-b3-A`, `b3-B`, `b3-C`
+- **3 коммита:** `ac1aaca` (A), `a1ab1a5` (B), `8e5c0df` (C)
+- **Patch set'ы:** применены через `git apply` без конфликтов
+- **Тесты:** 250 passed (231 + 19: 8 + 4 + 7)
+- **Merge:** main HEAD = (новый hash после merge commit)
+- **Deploy:** следующий шаг (см. session-handoff.md)
+- **Артефакты:** `max-ai-bot-hotfix-F0/after-*-b3.txt` после deploy
+- **Статус:** 🟡 merged, deploy pending
 
 ---
 

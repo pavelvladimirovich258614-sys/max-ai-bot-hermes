@@ -130,6 +130,15 @@ class Storage:
                 created_at TEXT,
                 finished_at TEXT
             );
+            CREATE TABLE IF NOT EXISTS research_cache (
+                cache_key TEXT PRIMARY KEY,    -- sha256(topic + freshness + params)
+                result_json TEXT NOT NULL,      -- JSON от cascade
+                created_at TEXT NOT NULL,       -- ISO-8601
+                expires_at TEXT NOT NULL,       -- ISO-8601, +1h
+                hit_count INTEGER DEFAULT 0
+            );
+            CREATE INDEX IF NOT EXISTS idx_research_cache_expires
+                ON research_cache(expires_at);
             """
         )
 

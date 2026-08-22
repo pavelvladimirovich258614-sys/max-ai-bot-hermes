@@ -1,0 +1,37 @@
+[
+  {
+    "topic": "AI в юридических услугах РФ 2026",
+    "expected_min_findings": 3,
+    "expected_tier_min": 2,
+    "expected_confidence": ["high", "medium"],
+    "banned_phrases": ["эксперты считают", "обычно"]
+  },
+  {
+    "topic": "EdTech в России 2026 тренды",
+    "expected_min_findings": 3,
+    "expected_tier_min": 1,
+    "expected_confidence": ["medium", "high"],
+    "banned_phrases": ["по мнению"]
+  },
+  {
+    "topic": "Mental health apps effectiveness 2026",
+    "expected_min_findings": 2,
+    "expected_tier_min": 1,
+    "expected_confidence": ["medium"],
+    "banned_phrases": ["гарантирует", "100%"]
+  },
+  {
+    "topic": "B2B SaaS pricing models 2026",
+    "expected_min_findings": 3,
+    "expected_tier_min": 2,
+    "expected_confidence": ["high", "medium"],
+    "banned_phrases": ["уникальное предложение", "революционный"]
+  },
+  {
+    "topic": "Crypto regulation EU 2026 MiCA",
+    "expected_min_findings": 2,
+    "expected_tier_min": 1,
+    "expected_confidence": ["high"],
+    "banned_phrases": ["гарантированная прибыль", "сигнал на покупку"]
+  }
+]

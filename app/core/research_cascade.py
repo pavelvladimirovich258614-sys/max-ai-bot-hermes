@@ -129,16 +129,33 @@ class ResearchCascade:
         topic: str,
         freshness_window: FreshnessWindow,
     ) -> ResearchResult:
+        # OBS-1: log the cascade start so an operator can correlate this
+        # invocation with the webhook_in / handler log line.
+        logger.info(
+            "cascade_start topic=%r freshness=%s after_date=%s",
+            topic, freshness_window,
+            (days_to_date(freshness_to_days(freshness_window))
+             if freshness_to_days(freshness_window) is not None else None),
+        )
         days = freshness_to_days(freshness_window)
         after_date = days_to_date(days) if days is not None else None
+        _tier_reached = 1  # tracked for cascade_done
 
         # ---- Tier 1: discovery ----
-        tier1_results = await self._tier1(topic, after_date)
+        try:
+            tier1_results = await self._tier1(topic, after_date)
+        except Exception:  # noqa: BLE001
+            logger.exception("cascade_failed stage=tier1 topic=%r", topic)
+            raise
         if not tier1_results:
             # Nothing returned at all. Check whether it's a "no fresh data"
             # situation vs. "search backend is down".
             fallback_oldest = await self._find_oldest_published_date(topic)
             if fallback_oldest is None and after_date is not None:
+                logger.info(
+                    "cascade_done topic=%r tier_reached=%d status=NO_FRESH_DATA",
+                    topic, _tier_reached,
+                )
                 return ResearchResult(
                     status="NO_FRESH_DATA",
                     freshness_window=freshness_window,
@@ -151,6 +168,10 @@ class ResearchCascade:
                     content_angles=[],
                     tier_summary=TierSummary(tier1_urls=0),
                 )
+            logger.info(
+                "cascade_done topic=%r tier_reached=%d status=FAILED",
+                topic, _tier_reached,
+            )
             return ResearchResult(
                 status="FAILED",
                 freshness_window=freshness_window,
@@ -167,6 +188,10 @@ class ResearchCascade:
             logger.info(
                 "research: tier1 alone produced %d findings (≥ %d), skipping tier2",
                 len(early_findings), self._tier1_stop_threshold,
+            )
+            logger.info(
+                "cascade_done topic=%r tier_reached=%d findings_count=%d status=OK",
+                topic, _tier_reached, len(early_findings),
             )
             # Per F2.4: we did NOT run the hermes subprocess in the
             # early-stop path. Mark it as "skipped" regardless of whether
@@ -189,9 +214,15 @@ class ResearchCascade:
             )
 
         # ---- Tier 2: crawl ----
-        crawled = await self._tier2(tier1_results)
+        _tier_reached = 2
+        try:
+            crawled = await self._tier2(tier1_results)
+        except Exception:  # noqa: BLE001
+            logger.exception("cascade_failed stage=tier2 topic=%r", topic)
+            raise
 
         # ---- Tier 3: verify & build findings ----
+        _tier_reached = 3
         findings = self._tier3(early_findings, crawled, topic, after_date)
 
         # ---- Hermes enrichment (F2.4) — background, non-blocking ----
@@ -199,7 +230,7 @@ class ResearchCascade:
         if hermes_findings:
             findings.extend(hermes_findings)
 
-        return self._build_result(
+        result = self._build_result(
             topic=topic,
             freshness_window=freshness_window,
             after_date=after_date,
@@ -214,6 +245,11 @@ class ResearchCascade:
             ),
             findings=findings,
         )
+        logger.info(
+            "cascade_done topic=%r tier_reached=%d findings_count=%d status=%s",
+            topic, _tier_reached, len(findings), result.status,
+        )
+        return result
 
     # ---- tier 1 ----
 

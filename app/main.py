@@ -81,6 +81,26 @@ async def health() -> dict:
 async def webhook(request: Request) -> Response:
     """Acknowledge a MAX update immediately, then dispatch it once in background."""
     event_json = await request.json()
+    import time as _time
+    _t0 = _time.monotonic()
+
+    # OBS-1: log the inbound webhook with what we can see without parsing
+    # the event. We deliberately do NOT log the full body — it contains
+    # user text which is PII.
+    _in_msg = (event_json.get("message") or {})
+    _in_body = (_in_msg.get("body") or {})
+    _msg_type = (
+        "callback" if event_json.get("callback")
+        else "command" if _in_body.get("text", "").startswith("/")
+        else "text"
+    )
+    logger.info(
+        "webhook_in update_id=%s msg_type=%s chat_id=%s user_id=%s",
+        event_json.get("update_id") or event_json.get("event_id"),
+        _msg_type,
+        _in_msg.get("chat_id") or _in_msg.get("receiver"),
+        _in_msg.get("sender") or _in_body.get("user_id"),
+    )
 
     async def process() -> None:
         try:
@@ -93,6 +113,14 @@ async def webhook(request: Request) -> Response:
             await app.state.dp.handle(event)
         except Exception:  # noqa: BLE001
             logger.exception("Failed to process webhook update")
+        finally:
+            _dt_ms = int((_time.monotonic() - _t0) * 1000)
+            logger.info(
+                "webhook_out update_id=%s msg_type=%s latency_ms=%d",
+                event_json.get("update_id") or event_json.get("event_id"),
+                _msg_type,
+                _dt_ms,
+            )
 
     accepted = app.state.webhook_runtime.submit(event_json, process)
     return JSONResponse(

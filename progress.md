@@ -53,7 +53,7 @@
 - **Коммит:** `4cc68e8`
 - **Статус:** ✅ done
 
-## 007 — 2026-08-22: Batch 3 (Pipeline + Evaluator + Cache)
+## 007 — 2026-08-22: Batch 3 (Pipeline + Evaluator + Cache) — merged, deployed
 
 - **Что:** 3 параллельных sub-task'а в 3 worktree
   - **A — Pipeline orchestrator** (`feature/batch3-pipeline`): FSM (7 states), `PipelineOrchestrator.run/cancel/status`, hermes subprocess через `create_subprocess_exec` (без shell), 60s timeout, graceful degradation
@@ -62,11 +62,25 @@
 - **Worktree'ы:** `max-ai-bot-b3-A`, `b3-B`, `b3-C`
 - **3 коммита:** `ac1aaca` (A), `a1ab1a5` (B), `8e5c0df` (C)
 - **Patch set'ы:** применены через `git apply` без конфликтов
+- **Merge commit:** `69f48b5` (main)
+- **Deploy:** успешно, /healthz=200 1st attempt, smoke green, артефакты в `max-ai-bot-hotfix-F0/after-*-b3.txt`
 - **Тесты:** 250 passed (231 + 19: 8 + 4 + 7)
-- **Merge:** main HEAD = (новый hash после merge commit)
-- **Deploy:** следующий шаг (см. session-handoff.md)
-- **Артефакты:** `max-ai-bot-hotfix-F0/after-*-b3.txt` после deploy
-- **Статус:** 🟡 merged, deploy pending
+- **Статус:** ✅ done
+
+## 008 — 2026-08-22: Sub-task D — workflow integration (deploy)
+
+- **Что:** Подключение batch 3 модулей к `/research` handler
+  - **C1:** `run_research_cached` (module-level wrapper) в `research_cascade.py` с `@cache(ttl=3600)`
+  - **C2:** `cmd_research` (module-level) — при `MAX_USE_PIPELINE=true` делегирует в `PipelineOrchestrator`, иначе legacy `do_research`
+  - **C3:** Evaluator hook — при `MAX_RESEARCH_EVAL_ENABLED=true` вызывает `ResearchEvaluator.evaluate()` и шлёт warning на REVISION_REQUIRED
+  - **Settings:** `max_use_pipeline` и `max_research_eval_enabled` (default false, opt-in)
+- **Тесты:** 255 passed (250 + 5: cache hit, cache key, pipeline on, pipeline off, evaluator hook)
+- **Commit:** `d8808b9` (main)
+- **TDD соблюдён:** red → green
+- **Deploy:** push + docker compose down/up с rollback планом, smoke через legacy path
+- **Опт-ин:** на проде `MAX_USE_PIPELINE=false` (default). Включение — отдельный шаг после стабилизации
+- **Артефакты:** `max-ai-bot-hotfix-F0/after-*-d.txt`
+- **Статус:** 🟡 deployed, opt-in not enabled
 
 ---
 

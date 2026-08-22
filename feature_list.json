@@ -264,14 +264,44 @@
     {
       "id": "D.1",
       "batch": "BATCH-Q",
-      "title": "Observability (structured logs, metrics endpoint, request_id)",
+      "title": "Observability — webhook + cascade structured logging",
       "priority": "P1",
+      "status": "partial",
+      "scope": [
+        "app/main.py (webhook_in/webhook_out added)",
+        "app/core/research_cascade.py (cascade_start/cascade_done/cascade_failed added)",
+        "tests/test_observability.py (6 caplog tests)"
+      ],
+      "tests": [
+        "tests/test_observability.py"
+      ],
+      "evidence": "OBS-1 hotfix shipped. webhook_in/out live-verified on prod via curl (msg_type, chat_id, user_id, latency_ms). cascade_* logs in code + 6 caplog tests. Other handlers (image_gen, menu, hermes_button) still use logger.warning — no central caplog coverage yet.",
+      "completed": "2026-08-22 (partial)"
+    },
+    {
+      "id": "D.1.2",
+      "batch": "BATCH-Q",
+      "title": "Observability — caplog coverage for remaining handlers",
+      "priority": "P2",
       "status": "not_started",
       "scope": [
-        "app/observability/* (new)"
+        "tests/test_observability_handlers.py (new)"
       ],
       "tests": [],
-      "evidence": "minimal: JSON logs, /metrics, X-Request-ID"
+      "evidence": "Add caplog tests for image_gen, menu, hermes_button, callback_handler, channel_registry, free_chat, prompt_cmd, copy, plan, post, ideate, analyze. Use the OBS-3 patch-файл as the marker; full coverage is a follow-up."
+    },
+    {
+      "id": "BUG-INV",
+      "batch": "BUG",
+      "title": "/research in MAX-клиенте hangs (webhook 200 OK, no response to user)",
+      "priority": "P0",
+      "status": "investigating",
+      "scope": [
+        "TBD — needs live test logs to identify root cause"
+      ],
+      "tests": [],
+      "evidence": "Webhook POSTs return 200 OK; dispatcher logs 'message_created' but no handler trace. OBS-1 structured logging (webhook_in/out, cascade_*) shipped to enable root-cause analysis. Next: user re-tests /research, we correlate webhook_in → cascade_start → cascade_done (or cascade_failed) to find the hang.",
+      "opened": "2026-08-22"
     },
     {
       "id": "D.2",

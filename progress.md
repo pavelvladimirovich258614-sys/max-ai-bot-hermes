@@ -80,7 +80,26 @@
 - **Deploy:** push + docker compose down/up с rollback планом, smoke через legacy path
 - **Опт-ин:** на проде `MAX_USE_PIPELINE=false` (default). Включение — отдельный шаг после стабилизации
 - **Артефакты:** `max-ai-bot-hotfix-F0/after-*-d.txt`
-- **Статус:** 🟡 deployed, opt-in not enabled
+- **Статус:** ✅ deployed, opt-in not enabled
+
+## 009 — 2026-08-22: OBS-1 — observability hotfix (diagnose `/research` hang)
+
+- **Контекст:** юзер сообщил что `/research` через MAX-клиент зависает. Из логов непонятно что сломалось — dispatcher логирует только "Обработано: message_created", без какая команда, какой handler, какой exception.
+- **Что:** Минимальная structured logging для диагностики
+  - **O1:** `app/main.py` webhook() логирует `webhook_in` (update_id, msg_type, chat_id, user_id) на входе и `webhook_out` (latency_ms) в finally
+  - **O3:** `app/core/research_cascade.py` _run_inner логирует `cascade_start` (topic, freshness, after_date), `cascade_done` (tier_reached, findings_count, status), `cascade_failed` (stage=tier1|tier2 + full traceback) на исключениях
+  - **O2:** silent excepts в research handler уже логируют через `logger.warning` (verified by caplog tests) — no changes
+  - **O4:** 6 caplog-тестов в `tests/test_observability.py`
+- **Тесты:** 261 passed (255 + 6)
+- **Commit:** `8673710` (main)
+- **TDD:** 3 red → 3 green → все 6 passed
+- **Deploy:** push + docker compose down/up, /healthz=200 1st attempt
+- **Live proof:** `webhook_in`/`webhook_out` подтверждены live curl'ом на проде. `cascade_*` сработают при реальном MAX webhook'е (caplog-тесты доказывают код)
+- **Артефакты:** `max-ai-bot-hotfix-F0/after-*-obs.txt`
+- **Статус:** ✅ deployed
+
+### Известная проблема (next session)
+- `/research` через MAX-клиент зависает — webhook приходит (200 OK), но response не доходит до юзера. Теперь с OBS-1 logs можно диагностировать: смотрим `cascade_start`/`cascade_done`/`cascade_failed` correlation с `webhook_in`/`webhook_out`.
 
 ---
 

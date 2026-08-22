@@ -93,6 +93,15 @@ class Settings(BaseSettings):
     # Retry budget for image_generation (network blips + 1002 rate limit).
     image_max_retries: int = 2
 
+    # ---- Batch 3 / Sub-task D: workflow integration toggles ----
+    # When True, /research uses PipelineOrchestrator + cache + (optional)
+    # evaluator instead of the legacy cascade path. Default off — opt-in.
+    max_use_pipeline: bool = False
+    # When True, ResearchEvaluator is called on every research result
+    # and a warning is appended when status=REVISION_REQUIRED.
+    # Requires MAX_USE_PIPELINE=True to take effect.
+    max_research_eval_enabled: bool = False
+
     @property
     def admin_user_ids(self) -> list[int]:
         out: list[int] = []

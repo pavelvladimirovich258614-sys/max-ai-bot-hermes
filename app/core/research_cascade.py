@@ -51,6 +51,7 @@ from typing import Any, Optional
 from pydantic import ValidationError
 
 from app.config import Settings
+from app.db.research_cache import cache as _research_cache_decorator
 from app.schemas.research import (
     FreshnessWindow,
     KeyFinding,
@@ -632,3 +633,35 @@ def _parse_iso_date(s: Any) -> Optional[date]:
         return date.fromisoformat(str(s)[:10])
     except ValueError:
         return None
+
+
+# ---- D.1 — cached entry point (Sub-task D) ----
+#
+# Same semantics as ``ResearchCascade.run``, but cacheable across instances
+# and across processes (the @cache decorator writes to SQLite via
+# ResearchCache). Cache key is sha256(topic + freshness_window) — see
+# ResearchCache.make_key for the exact hash.
+#
+# This is the entry point that ``PipelineOrchestrator`` and the handler
+# use when ``MAX_USE_PIPELINE`` is on. Legacy code paths keep using
+# ``ResearchCascade.run`` directly so backwards-compat is preserved.
+
+@_research_cache_decorator(ttl_seconds=3600)
+async def run_research_cached(topic: str, freshness_window: str) -> dict:
+    """Cached wrapper around ResearchCascade.run.
+
+    Returns the cascade result as a dict (Pydantic v2 ``model_dump``).
+    On cache hit, no real cascade is executed — the cached dict is
+    returned directly.
+
+    Raises whatever ``cascade.run`` raises (we do NOT swallow errors
+    here; the caller decides how to handle them).
+    """
+    from app.config import get_settings
+    settings = get_settings()
+    cascade = ResearchCascade(settings)
+    try:
+        result = await cascade.run(topic, freshness_window)  # type: ignore[arg-type]
+        return result.model_dump()
+    finally:
+        await cascade.aclose()

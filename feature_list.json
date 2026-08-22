@@ -1,0 +1,245 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "project": "max-ai-bot-hermes",
+  "version": "1.0.0",
+  "created": "2026-08-22",
+  "features": [
+    {
+      "id": "F0.1",
+      "batch": "F0",
+      "title": "Orchestrator fallback chain (hermes -> primary -> fallback)",
+      "priority": "P0",
+      "status": "passing",
+      "scope": [
+        "app/core/orchestrator.py"
+      ],
+      "tests": [
+        "tests/test_orchestrator_fallback.py"
+      ],
+      "evidence": "186 passed (F0 baseline)",
+      "completed": "2026-08-21"
+    },
+    {
+      "id": "F0.2",
+      "batch": "F0",
+      "title": "/status command + diagnostics",
+      "priority": "P0",
+      "status": "passing",
+      "scope": [
+        "app/max/handlers/status.py",
+        "app/max/client.py"
+      ],
+      "tests": [
+        "tests/test_status_command.py"
+      ],
+      "evidence": "registered in BOT_COMMANDS, 12th slot",
+      "completed": "2026-08-21"
+    },
+    {
+      "id": "F0.3",
+      "batch": "F0",
+      "title": "Free-chat intent router (keyword-based)",
+      "priority": "P1",
+      "status": "passing",
+      "scope": [
+        "app/max/intent_router.py",
+        "app/max/handlers/free_chat.py"
+      ],
+      "tests": [
+        "tests/test_intent_router.py",
+        "tests/test_free_chat_intent_routing.py"
+      ],
+      "evidence": "7 rules, 3+ words trigger",
+      "completed": "2026-08-21"
+    },
+    {
+      "id": "F1",
+      "batch": "F1",
+      "title": "/prompt as Senior Context Engineer (8 domains, envelope)",
+      "priority": "P0",
+      "status": "passing",
+      "scope": [
+        "app/llm/prompts/domains.py",
+        "app/llm/prompts/prompt.py",
+        "app/llm/prompts/prompt_engineer.py"
+      ],
+      "tests": [
+        "tests/test_prompt_envelope.py",
+        "tests/test_descriptions_and_skill.py"
+      ],
+      "evidence": "214 passed (F1 baseline, 28 new tests)",
+      "completed": "2026-08-21"
+    },
+    {
+      "id": "F2.1",
+      "batch": "F2",
+      "title": "Freshness window in /research (7d/30d/90d/all)",
+      "priority": "P0",
+      "status": "passing",
+      "scope": [
+        "app/tools/web_search.py",
+        "app/schemas/research.py",
+        "app/llm/prompts/researcher.py"
+      ],
+      "tests": [
+        "tests/test_research_cascade.py"
+      ],
+      "evidence": "parse_freshness() with default 30d",
+      "completed": "2026-08-21"
+    },
+    {
+      "id": "F2.2",
+      "batch": "F2",
+      "title": "Three-tier research cascade (Tier 1/2/3)",
+      "priority": "P0",
+      "status": "passing",
+      "scope": [
+        "app/core/research_cascade.py"
+      ],
+      "tests": [
+        "tests/test_research_cascade.py"
+      ],
+      "evidence": "20 cascade tests, early-stop at tier1_stop_threshold=3",
+      "completed": "2026-08-21"
+    },
+    {
+      "id": "F2.3",
+      "batch": "F2",
+      "title": "Strict JSON output via Pydantic (ResearchResult schema)",
+      "priority": "P0",
+      "status": "passing",
+      "scope": [
+        "app/schemas/research.py"
+      ],
+      "tests": [
+        "tests/test_research_cascade.py"
+      ],
+      "evidence": "Pydantic v2 BaseModel, parse_obj() validates",
+      "completed": "2026-08-21"
+    },
+    {
+      "id": "F2.4",
+      "batch": "F2",
+      "title": "Hermes enrichment in background (subprocess, 30s timeout)",
+      "priority": "P2",
+      "status": "passing_with_warning",
+      "scope": [
+        "app/core/research_cascade.py"
+      ],
+      "tests": [
+        "tests/test_research_cascade.py"
+      ],
+      "evidence": "skipped when peer RZA not registered (current prod state); gracefully degrades",
+      "warning": "Skipped at runtime until peer RZA is registered. Code path is tested and correct.",
+      "completed": "2026-08-21"
+    },
+    {
+      "id": "F2.5",
+      "batch": "F2",
+      "title": "/research <topic> [Nd] syntax in handler",
+      "priority": "P1",
+      "status": "passing",
+      "scope": [
+        "app/max/handlers/research.py",
+        "app/max/executors.py"
+      ],
+      "tests": [],
+      "evidence": "live smoke S6 verified [7d] parsing",
+      "completed": "2026-08-21"
+    },
+    {
+      "id": "HOTFIX-C.1",
+      "batch": "HOTFIX-C",
+      "title": "BUG #1 HIGH: parse_freshness import in research_smoke.py",
+      "priority": "P0",
+      "status": "passing",
+      "scope": [
+        "app/cli/research_smoke.py"
+      ],
+      "tests": [
+        "tests/test_research_smoke_imports.py"
+      ],
+      "evidence": "module-level import added, test_research_smoke_imports.py passes",
+      "completed": "2026-08-22"
+    },
+    {
+      "id": "HOTFIX-C.2",
+      "batch": "HOTFIX-C",
+      "title": "BUG #2 LOW: _compose_unknowns conditional generic message",
+      "priority": "P1",
+      "status": "passing",
+      "scope": [
+        "app/core/research_cascade.py"
+      ],
+      "tests": [
+        "tests/test_compose_unknowns.py"
+      ],
+      "evidence": "3 test cases (empty / no-url / with-url) all pass",
+      "completed": "2026-08-22"
+    },
+    {
+      "id": "HOTFIX-C.3",
+      "batch": "HOTFIX-C",
+      "title": "Deploy hotfix C.1+C.2 to production (HEAD=d74c350)",
+      "priority": "P0",
+      "status": "passing",
+      "scope": [
+        "production"
+      ],
+      "tests": [],
+      "evidence": "merge commit d74c350, health=200 1st attempt, smoke PARTIAL with 8 findings all in 7d window",
+      "completed": "2026-08-22"
+    },
+    {
+      "id": "F3",
+      "batch": "BATCH-3",
+      "title": "Pipeline orchestrator + Evaluator (golden set) + SQLite cache",
+      "priority": "P0",
+      "status": "not_started",
+      "scope": [
+        "app/core/pipeline_orchestrator.py (new)",
+        "tests/test_research_evaluator.py (new)",
+        "app/db/research_cache.py (new)"
+      ],
+      "tests": [],
+      "evidence": "todo: hermes peer dm rza, golden set 5 topics, TTL 1h",
+      "blocked_by": []
+    },
+    {
+      "id": "D.1",
+      "batch": "BATCH-Q",
+      "title": "Observability (structured logs, metrics endpoint, request_id)",
+      "priority": "P1",
+      "status": "not_started",
+      "scope": [
+        "app/observability/* (new)"
+      ],
+      "tests": [],
+      "evidence": "minimal: JSON logs, /metrics, X-Request-ID"
+    },
+    {
+      "id": "D.2",
+      "batch": "BATCH-Q",
+      "title": "Coverage measurement (pytest --cov, target 80%)",
+      "priority": "P1",
+      "status": "not_started",
+      "scope": [
+        "pytest.ini"
+      ],
+      "tests": [],
+      "evidence": "currently coverage not measured"
+    },
+    {
+      "id": "D.3",
+      "batch": "BATCH-Q",
+      "title": "E2E smoke via MAX webhook (real chat, not just CLI)",
+      "priority": "P2",
+      "status": "not_started",
+      "scope": [
+        "tests/e2e/ (new)"
+      ],
+      "tests": [],
+      "evidence": "requires interactive MAX client or webhook simulator"
+    }
+  ]
+}
